@@ -1,0 +1,2 @@
+---
+openshift_service_catalog_pod_definition_dir: '/etc/openshift.d/'
