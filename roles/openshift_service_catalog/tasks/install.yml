@@ -1,0 +1,50 @@
+---
+# do any asserts here
+
+- name: Create temp directory for doing work in
+  command: mktemp -d /tmp/openshift-logging-ansible-XXXXXX
+  register: mktemp
+  changed_when: False
+
+## static pod for api server
+- name: Create pod definition directory
+  file:
+    name: "{{ openshift_service_catalog_pod_definition_dir }}"
+    state: directory
+    permissions: 0755
+
+- name: Copy pod definition to directory
+  copy:
+    src: api_server.yml
+    dest: "{{ openshift_service_catalog_pod_definition_dir }}/service_catalog_api_server.yml"
+
+# Necessary to update kubelet config and restart?
+
+## controller process DC
+- name: Copy Controller definition
+  copy:
+    src: controller_dc.yml
+    dest: "{{ mktemp.stdout }}/controller_dc.yml"
+
+- name: Set Controller DC
+  oc_obj:
+    name: service-catalog-controller
+    namespace: openshift-infra
+    kind: dc
+    state: present
+    files:
+    - "{{ mktemp.stdout }}/controller_dc.yml"
+    delete_after: yes
+
+- name: Scale up Controller
+  oc_scale:
+    name: service-catalog-controller
+    namespace: openshift-infra
+    kind: dc
+    replicas: "{{ openshift_service_catalog_replicas | default(1) }}"
+
+- name: Delete temp directory
+  file:
+    name: "{{ mktemp.stdout }}"
+    state: absent
+  changed_when: False

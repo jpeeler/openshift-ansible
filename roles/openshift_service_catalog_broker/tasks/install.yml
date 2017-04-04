@@ -1,0 +1,38 @@
+---
+# do any asserts here
+
+
+- name: Create temp directory for doing work in
+  command: mktemp -d /tmp/openshift-logging-ansible-XXXXXX
+  register: mktemp
+  changed_when: False
+
+## broker process DC
+- name: Copy Controller definition
+  copy:
+    src: broker_dc.yml
+    dest: "{{ mktemp.stdout }}/broker_dc.yml"
+
+- name: Set Broker DC
+  oc_obj:
+    name: service-catalog-broker
+    namespace: openshift-infra
+    kind: dc
+    state: present
+    files:
+    - "{{ mktemp.stdout }}/broker_dc.yml"
+    delete_after: yes
+
+- name: Scale up Broker
+  oc_scale:
+    name: service-catalog-broker
+    namespace: openshift-infra
+    kind: dc
+    replicas: "{{ openshift_service_catalog_broker_replicas | default(1) }}"
+
+
+- name: Delete temp directory
+  file:
+    name: "{{ mktemp.stdout }}"
+    state: absent
+  changed_when: False
