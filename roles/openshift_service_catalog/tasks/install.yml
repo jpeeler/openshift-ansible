@@ -13,18 +13,31 @@
     state: directory
     permissions: 0755
 
-- name: Copy pod definition to directory
-  copy:
-    src: api_server.yml
+- name: Create pod definition in directory
+  template:
+    src: api_server.j2
     dest: "{{ openshift_service_catalog_pod_definition_dir }}/service_catalog_api_server.yml"
+  vars:
+    image: ""
+    namespace: ""
+    cpu_limit: none
+    memory_limit: none
+    cpu_requests: none
+    memory_request: none
 
 # Necessary to update kubelet config and restart?
 
 ## controller process DC
-- name: Copy Controller definition
-  copy:
-    src: controller_dc.yml
+- name: Create Controller definition
+  template:
+    src: controller_dc.j2
     dest: "{{ mktemp.stdout }}/controller_dc.yml"
+  vars:
+    image: ""
+    replicas: 1
+    node_selector: ""
+    cpu_limit: none
+    memory_limit: none
 
 - name: Set Controller DC
   oc_obj:

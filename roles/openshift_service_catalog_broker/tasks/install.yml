@@ -8,10 +8,16 @@
   changed_when: False
 
 ## broker process DC
-- name: Copy Controller definition
-  copy:
-    src: broker_dc.yml
+- name: Create Controller definition
+  template:
+    src: broker_dc.j2
     dest: "{{ mktemp.stdout }}/broker_dc.yml"
+  vars:
+    image: ""
+    replicas: 1
+    node_selector: ""
+    cpu_limit: none
+    memory_limit: none
 
 - name: Set Broker DC
   oc_obj:

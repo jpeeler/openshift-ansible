@@ -1,0 +1,45 @@
+apiVersion: "v1"
+kind: "DeploymentConfig"
+metadata:
+  name: service-catalog-broker
+  labels:
+    provider: openshift
+    component: service-catalog-broker
+spec:
+  replicas: {{ replicas | default(0) }}
+  selector:
+    provider: openshift
+    component: service-catalog-broker
+  strategy:
+    rollingParams:
+      intervalSeconds: 1
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Recreate
+  template:
+    metadata:
+      name: service-catalog-broker
+      labels:
+        provider: openshift
+        component: service-catalog-broker
+    spec:
+      serviceAccountName: service-catalog-broker
+{% if node_selector is iterable and node_selector | length > 0 %}
+      nodeSelector:
+{% for key, value in node_selector.iteritems() %}
+        {{key}}: "{{value}}"
+{% endfor %}
+{% endif %}
+      containers:
+        -
+          name: controller
+          image: {{ image }}
+          imagePullPolicy: Always
+          resources:
+            limits:
+{% if cpu_limit is defined and cpu_limit is not none %}
+              cpu: "{{ cpu_limit }}"
+{% end if %}
+{% if memory_limit is defined and memory_limit is not none %}
+              memory: "{{ memory_limit }}"
+{% endif %}
