@@ -24,6 +24,7 @@
     memory_limit: none
     cpu_requests: none
     memory_request: none
+    cors_allowed_origin: localhost
 
 # Necessary to update kubelet config and restart?
 

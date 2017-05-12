@@ -1,0 +1,51 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: controller-manager
+  name: controller-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: controller-manager
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: controller-manager
+    spec:
+      containers:
+      - args:
+        - -v
+        - "5"
+        - --service-catalog-api-server-url
+        - http://$(APISERVER_SERVICE_HOST):$(APISERVER_SERVICE_PORT)
+        image: quay.io/kubernetes-service-catalog/controller-manager:canary
+        imagePullPolicy: Always
+        name: controller-manager
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        volumeMounts:
+        - mountPath: /etc/service-catalog-ssl
+          name: service-catalog-ssl
+          readOnly: true
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: service-catalog-ssl
+        secret:
+          defaultMode: 420
+          items:
+          - key: tls.crt
+            path: apiserver.crt
+          secretName: apiserver-ssl
