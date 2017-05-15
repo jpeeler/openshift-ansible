@@ -1,22 +1,21 @@
 ---
 # do any asserts here
 
+- name: Set Service Catalog namespace
+  oc_project:
+    state: present
+    name: "{{ openshift_service_catalog_namespace }}"
+    node_selector: "{{ openshift_service_catalog_nodeselector | default(null) }}"
+
 - name: Create temp directory for doing work in
   command: mktemp -d /tmp/openshift-logging-ansible-XXXXXX
   register: mktemp
   changed_when: False
 
-## static pod for api server
-- name: Create pod definition directory
-  file:
-    name: "{{ openshift_service_catalog_pod_definition_dir }}"
-    state: directory
-    permissions: 0755
-
-- name: Create pod definition in directory
-  template:
+## api server
+- template:
     src: api_server.j2
-    dest: "{{ openshift_service_catalog_pod_definition_dir }}/service_catalog_api_server.yml"
+    dest: "{{ mktemp.stdout }}/service_catalog_api_server.yml"
   vars:
     image: ""
     namespace: ""
@@ -26,13 +25,48 @@
     memory_request: none
     cors_allowed_origin: localhost
 
-# Necessary to update kubelet config and restart?
+- name: Set Service Catalog API Server deployment
+  oc_obj:
+    state: present
+    namespace: "{{ openshift_service_catalog_namespace }}"
+    kind: deployment
+    name: apiserver
+    files:
+    - "{{ mktemp.stdout }}/service_catalog_api_server.yml"
+    delete_after: yes
 
-## controller process DC
-- name: Create Controller definition
-  template:
-    src: controller_dc.j2
-    dest: "{{ mktemp.stdout }}/controller_dc.yml"
+- template:
+    src: api_server_service.j2
+    dest: "{{ mktemp.stdout }}/service_catalog_api_service.yml"
+
+- name: Set Service Catalog API Server service
+  oc_obj:
+    state: present
+    namespace: "{{ openshift_service_catalog_namespace }}"
+    kind: service
+    name: apiserver
+    files:
+    - "{{ mktemp.stdout }}/service_catalog_api_service.yml"
+    delete_after: yes
+
+- template:
+    src: api_server_route.j2
+    dest: "{{ mktepm.stdout }}/service_catalog_api_route.yml"
+
+- name: Set Service Catalog API Server route
+  oc_obj:
+    state: present
+    namespace: "{{ openshift_service_catalog_namespace }}"
+    kind: route
+    name: apiserver
+    files:
+    - "{{ mktemp.stdout }}/service_catalog_api_route.yml"
+    delete_after: yes
+
+## controller manager
+- template:
+    src: controller_manager.j2
+    dest: "{{ mktemp.stdout }}/controller_manager.yml"
   vars:
     image: ""
     replicas: 1
@@ -40,22 +74,29 @@
     cpu_limit: none
     memory_limit: none
 
-- name: Set Controller DC
+- name: Set Controller Manager deployment
   oc_obj:
-    name: service-catalog-controller
-    namespace: openshift-infra
-    kind: dc
     state: present
+    namespace: "{{ openshift_service_catalog_namespace }}"
+    kind: deployment
+    name: controller-manager
     files:
-    - "{{ mktemp.stdout }}/controller_dc.yml"
+    - "{{ mktemp.stdout }}/controller_manager.yml"
     delete_after: yes
 
-- name: Scale up Controller
-  oc_scale:
-    name: service-catalog-controller
-    namespace: openshift-infra
-    kind: dc
-    replicas: "{{ openshift_service_catalog_replicas | default(1) }}"
+- template:
+    src: controller_manager_service.j2
+    dest: "{{ mktemp.stdout }}/controller_manager_service.yml"
+
+- name: Set Controller Manager service
+  oc_obj:
+    state: present
+    namespace: "{{ openshift_service_catalog_namespace }}"
+    kind: service
+    name: controller-manager
+    files:
+    - "{{ mktemp.stdout }}/controller_manager_service.yml"
+    delete_after: yes
 
 - name: Delete temp directory
   file:

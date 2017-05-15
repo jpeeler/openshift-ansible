@@ -2,3 +2,6 @@
 openshift_service_catalog_pod_definition_dir: '/etc/openshift.d/'
 openshift_service_catalog_remove: false
 openshift_service_catalog_replicas: 1
+
+openshift_service_catalog_namespace: service-catalog
+openshift_service_catalog_nodeselector: {}
