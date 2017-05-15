@@ -1,17 +1,21 @@
 ---
 # do any asserts here
 
+- name: Set Service Catalog Broker namespace
+  oc_project:
+    state: present
+    name: "{{ openshift_service_catalog_broker_namespace }}"
+    node_selector: "{{ openshift_service_catalog_broker_nodeselector | default(null) }}"
 
 - name: Create temp directory for doing work in
   command: mktemp -d /tmp/openshift-logging-ansible-XXXXXX
   register: mktemp
   changed_when: False
 
-## broker process DC
-- name: Create Controller definition
-  template:
-    src: broker_dc.j2
-    dest: "{{ mktemp.stdout }}/broker_dc.yml"
+## broker process deployment
+- template:
+    src: broker.j2
+    dest: "{{ mktemp.stdout }}/broker.yml"
   vars:
     image: ""
     replicas: 1
@@ -19,23 +23,29 @@
     cpu_limit: none
     memory_limit: none
 
-- name: Set Broker DC
+- name: Set Service Catalog Broker deployment
   oc_obj:
-    name: service-catalog-broker
-    namespace: openshift-infra
-    kind: dc
     state: present
+    namespace: "{{ openshift_service_catalog_broker_namespace }}"
+    kind: deployment
+    name: ups-broker
     files:
-    - "{{ mktemp.stdout }}/broker_dc.yml"
+    - "{{ mktemp.stdout }}/broker.yml"
     delete_after: yes
 
-- name: Scale up Broker
-  oc_scale:
-    name: service-catalog-broker
-    namespace: openshift-infra
-    kind: dc
-    replicas: "{{ openshift_service_catalog_broker_replicas | default(1) }}"
+- template:
+    src: broker_service.j2
+    dest: "{{ mktemp.stdout }}/broker_service.yml"
 
+- name: Set Service Catalog Broker service
+  oc_obj:
+    state: present
+    namespace: "{{ openshift_service_catalog_broker_namespace }}"
+    kind: service
+    name: ups-broker
+    files:
+    - "{{ mktemp.stdout }}/broker_service.yml"
+    delete_after: yes
 
 - name: Delete temp directory
   file:

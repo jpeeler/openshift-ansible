@@ -1,19 +1,19 @@
 ---
-## static pod for api server
-- name: Create pod definition directory
-  file:
-    name: "{{ openshift_service_catalog_pod_definition_dir }}"
-    state: directory
-    permissions: 0755
-
-- name: Remove pod definition from directory
-  file:
-    path: "{{ openshift_service_catalog_pod_definition_dir }}/service_catalog_api_server.yml"
-    state: absent
-
-- name: Remove Controller DC
+- name: Remove Service Catalog Broker service
   oc_obj:
-    name: service-catalog-controller
     state: absent
-    namespace: openshift-infra
-    kind: dc
+    namespace: "{{ openshift_service_catalog_broker_namespace }}"
+    kind: service
+    name: ups-broker
+
+- name: Remove Service Catalog Broker deployment
+  oc_obj:
+    state: absent
+    namespace: "{{ openshift_service_catalog_broker_namespace }}"
+    kind: deployment
+    name: ups-broker
+
+- name: Remove Service Catalog Broker namespace
+  oc_project:
+    state: absent
+    name: "{{ openshift_service_catalog_broker_namespace }}"

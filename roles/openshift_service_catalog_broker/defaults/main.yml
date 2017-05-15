@@ -1,3 +1,6 @@
 ---
 openshift_service_catalog_broker_remove: false
 openshift_service_catalog_broker_replicas: 1
+
+openshift_service_catalog_broker_namespace: ups-broker
+openshift_service_catalog_broker_nodeselector: {}
