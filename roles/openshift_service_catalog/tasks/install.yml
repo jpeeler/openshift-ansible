@@ -5,7 +5,15 @@
   oc_project:
     state: present
     name: "{{ openshift_service_catalog_namespace }}"
-    node_selector: "{{ openshift_service_catalog_nodeselector | default(null) }}"
+#    node_selector: "{{ openshift_service_catalog_nodeselector | default(null) }}"
+
+- name: Set SA cluster-role
+  oc_adm_policy_user:
+    state: present
+    namespace: "{{ openshift_service_catalog_namespace }}"
+    resource_kind: cluster-role
+    resource_name: admin
+    user: "system:serviceaccount:{{ openshift_service_catalog_namespace }}:default"
 
 - name: Create temp directory for doing work in
   command: mktemp -d /tmp/openshift-logging-ansible-XXXXXX
@@ -51,7 +59,7 @@
 
 - template:
     src: api_server_route.j2
-    dest: "{{ mktepm.stdout }}/service_catalog_api_route.yml"
+    dest: "{{ mktemp.stdout }}/service_catalog_api_route.yml"
 
 - name: Set Service Catalog API Server route
   oc_obj:

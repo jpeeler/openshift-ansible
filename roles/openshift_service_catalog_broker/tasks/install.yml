@@ -5,7 +5,7 @@
   oc_project:
     state: present
     name: "{{ openshift_service_catalog_broker_namespace }}"
-    node_selector: "{{ openshift_service_catalog_broker_nodeselector | default(null) }}"
+#    node_selector: "{{ openshift_service_catalog_broker_nodeselector | default(null) }}"
 
 - name: Create temp directory for doing work in
   command: mktemp -d /tmp/openshift-logging-ansible-XXXXXX
