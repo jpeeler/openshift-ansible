@@ -25,22 +25,23 @@ objects:
           app: apiserver
       spec:
         containers:
-        - args:
-          - --storage-type
-          - etcd
-          - --secure-port
-          - "6443"
-          - --insecure-bind-address
-          - 0.0.0.0
-          - --insecure-port
-          - "8081"
-          - --etcd-servers
-          - http://localhost:2379
-          - -v
-          - "10"
-          - --cors-allowed-origins
-          - ${CORS_ALLOWED_ORIGIN}
-          image: quay.io/kubernetes-service-catalog/apiserver:canary
+          - args:
+            - --storage-type
+            - etcd
+            - --secure-port
+            - "6443"
+            - --insecure-bind-address
+            - 0.0.0.0
+            - --insecure-port
+            - "8081"
+            - --etcd-servers
+            - http://localhost:2379
+            - -v
+            - "10"
+            - --cors-allowed-origins
+            - ${CORS_ALLOWED_ORIGIN}
+          command: ["/usr/bin/apiserver"]
+          image: docker.io/jpeeler/origin-service-catalog:latest
           imagePullPolicy: Always
           name: apiserver
           ports:
@@ -54,33 +55,33 @@ objects:
           - mountPath: /var/run/kubernetes-service-catalog
             name: apiserver-ssl
             readOnly: true
-        - env:
-          - name: ETCD_DATA_DIR
-            value: /data-dir
-          image: quay.io/coreos/etcd:latest
-          imagePullPolicy: Always
-          name: etcd
-          resources: {}
-          terminationMessagePath: /dev/termination-log
-          volumeMounts:
-          - mountPath: /data-dir
+          - env:
+            - name: ETCD_DATA_DIR
+              value: /data-dir
+            image: quay.io/coreos/etcd:latest
+            imagePullPolicy: Always
+            name: etcd
+            resources: {}
+            terminationMessagePath: /dev/termination-log
+            volumeMounts:
+            - mountPath: /data-dir
+              name: data-dir
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+          - name: apiserver-ssl
+            secret:
+              defaultMode: 420
+              secretName: apiserver-ssl
+              items:
+              - key: tls.crt
+                path: apiserver.crt
+              - key: tls.key
+                path: apiserver.key
+          - emptyDir: {}
             name: data-dir
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
-        volumes:
-        - name: apiserver-ssl
-          secret:
-            defaultMode: 420
-            secretName: apiserver-ssl
-            items:
-            - key: tls.crt
-              path: apiserver.crt
-            - key: tls.key
-              path: apiserver.key
-        - emptyDir: {}
-          name: data-dir
 - apiVersion: v1
   kind: Service
   metadata:
@@ -122,12 +123,13 @@ objects:
           app: controller-manager
       spec:
         containers:
-        - args:
-          - -v
-          - "5"
-          - --service-catalog-api-server-url
-          - http://$(APISERVER_SERVICE_HOST):$(APISERVER_SERVICE_PORT)
-          image: quay.io/kubernetes-service-catalog/controller-manager:canary
+          - args:
+            - -v
+            - "5"
+            - --service-catalog-api-server-url
+            - http://$(APISERVER_SERVICE_HOST):$(APISERVER_SERVICE_PORT)
+          command: ["/usr/bin/controller-manager"]
+          image: docker.io/jpeeler/origin-service-catalog:latest
           imagePullPolicy: Always
           name: controller-manager
           ports:
@@ -139,18 +141,18 @@ objects:
           - mountPath: /etc/service-catalog-ssl
             name: service-catalog-ssl
             readOnly: true
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
-        volumes:
-        - name: service-catalog-ssl
-          secret:
-            defaultMode: 420
-            items:
-            - key: tls.crt
-              path: apiserver.crt
-            secretName: apiserver-ssl
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+          - name: service-catalog-ssl
+            secret:
+              defaultMode: 420
+              items:
+              - key: tls.crt
+                path: apiserver.crt
+              secretName: apiserver-ssl
 - apiVersion: v1
   kind: Service
   metadata:

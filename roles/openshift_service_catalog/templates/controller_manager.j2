@@ -25,7 +25,8 @@ spec:
         - "5"
         - --service-catalog-api-server-url
         - http://$(APISERVER_SERVICE_HOST):$(APISERVER_SERVICE_PORT)
-        image: quay.io/kubernetes-service-catalog/controller-manager:canary
+        command: ["/usr/bin/controller-manager"]
+        image: docker.io/jpeeler/origin-service-catalog:latest
         imagePullPolicy: Always
         name: controller-manager
         ports:

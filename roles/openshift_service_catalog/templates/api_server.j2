@@ -35,7 +35,8 @@ spec:
         - "10"
         - --cors-allowed-origins
         - {{ cors_allowed_origin }}
-        image: quay.io/kubernetes-service-catalog/apiserver:canary
+        command: ["/usr/bin/apiserver"]
+        image: docker.io/jpeeler/origin-service-catalog:latest
         imagePullPolicy: Always
         name: apiserver
         ports:
