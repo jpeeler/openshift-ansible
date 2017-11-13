@@ -48,7 +48,7 @@
   - name: Validate python version - ans_dist is fedora and python is v3
     fail:
       msg: |
-        openshift-ansible requires Python 3 for {{ ansible_distribution }};
+        openshift-ansible {{ ansible_python }} requires Python 3 for {{ ansible_distribution }};
         For information on enabling Python 3 with Ansible, see https://docs.ansible.com/ansible/python_3_support.html
     when:
     - ansible_distribution == 'Fedora'
